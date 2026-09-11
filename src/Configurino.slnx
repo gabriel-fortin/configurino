@@ -1,1 +1,9 @@
-<Solution />
+<Solution>
+  <Folder Name="/LooseFiles/">
+    <File Path="..\Backlog.md" />
+    <File Path="..\CLAUDE.md" />
+    <File Path="..\README.md" />
+    <File Path="..\.gitignore" />
+  </Folder>
+  <Project Path="Configurino.Domain\Configurino.Domain.csproj" />
+</Solution>
