@@ -4,6 +4,8 @@
     <File Path="..\CLAUDE.md" />
     <File Path="..\README.md" />
     <File Path="..\.gitignore" />
+    <File Path="Directory.Build.props" />
   </Folder>
+  <Project Path="Configurino.Domain.Tests/Configurino.Domain.Tests.csproj" />
   <Project Path="Configurino.Domain\Configurino.Domain.csproj" />
 </Solution>
