@@ -1,7 +1,7 @@
-namespace org.g14.Configurino.Domain.ConfigTree;
+namespace org.g14.Configurino.Domain.ConfigTree.Config;
 
 /// <summary>The type a client application declared a key to have.</summary>
-public enum ConfigValueKind
+public enum ValueKind
 {
     String = 1,
 

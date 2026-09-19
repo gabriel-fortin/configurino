@@ -1,4 +1,6 @@
 using org.g14.Configurino.Domain.ConfigTree;
+using org.g14.Configurino.Domain.ConfigTree.Changes;
+using org.g14.Configurino.Domain.ConfigTree.Config;
 using org.g14.Configurino.Domain.ConfigTree.Events;
 
 namespace org.g14.Configurino.Domain.Tests;
@@ -14,14 +16,14 @@ public sealed class ConfigNodeKindChangeTests
     public void Changing_the_type_of_a_live_key_takes_the_new_type_and_drops_the_value()
     {
         var node = ConfigNodeBuilder.AConfigNode()
-            .WithKey("timeout", ConfigValueKind.Integer)
-            .WithValue("timeout", ConfigValue.Of(30L))
+            .WithKey("timeout", ValueKind.Integer)
+            .WithValue("timeout", EntryValue.Of(30L))
             .Build();
 
-        node.RegisterKeys([Any.Declare("timeout", ConfigValueKind.String)], Any.Client, Any.Later(60));
+        node.RegisterKeys([Any.Declare("timeout", ValueKind.String)], Any.Client, Any.Later(60));
 
         var timeout = KeyIn(node, "timeout");
-        Assert.Equal(ConfigValueKind.String, timeout.Kind);
+        Assert.Equal(ValueKind.String, timeout.Kind);
         Assert.Equal(KeyStatus.Active, timeout.Status);
         Assert.False(timeout.IsSet);
         Assert.Equal(KeyReadResult.NotSet, node.TryGetValue(Any.Key("timeout")));
@@ -31,20 +33,20 @@ public sealed class ConfigNodeKindChangeTests
     public void Changing_the_type_of_an_obsolete_key_does_exactly_the_same()
     {
         var node = ConfigNodeBuilder.AConfigNode()
-            .WithKey("timeout", ConfigValueKind.Integer)
-            .WithValue("timeout", ConfigValue.Of(30L))
+            .WithKey("timeout", ValueKind.Integer)
+            .WithValue("timeout", EntryValue.Of(30L))
             .Build();
 
-        node.RegisterKeys([Any.Declare("other", ConfigValueKind.String)], Any.Client, Any.Later(60));
+        node.RegisterKeys([Any.Declare("other", ValueKind.String)], Any.Client, Any.Later(60));
         Assert.Equal(KeyStatus.Obsolete, KeyIn(node, "timeout").Status);
 
         node.RegisterKeys(
-            [Any.Declare("timeout", ConfigValueKind.Boolean), Any.Declare("other", ConfigValueKind.String)],
+            [Any.Declare("timeout", ValueKind.Boolean), Any.Declare("other", ValueKind.String)],
             Any.Client,
             Any.Later(120));
 
         var timeout = KeyIn(node, "timeout");
-        Assert.Equal(ConfigValueKind.Boolean, timeout.Kind);
+        Assert.Equal(ValueKind.Boolean, timeout.Kind);
         Assert.Equal(KeyStatus.Active, timeout.Status);
         Assert.False(timeout.IsSet);
     }
@@ -53,11 +55,11 @@ public sealed class ConfigNodeKindChangeTests
     public void Says_out_loud_which_values_it_dropped()
     {
         var node = ConfigNodeBuilder.AConfigNode()
-            .WithKey("timeout", ConfigValueKind.Integer)
-            .WithValue("timeout", ConfigValue.Of(30L))
+            .WithKey("timeout", ValueKind.Integer)
+            .WithValue("timeout", EntryValue.Of(30L))
             .Build();
 
-        node.RegisterKeys([Any.Declare("timeout", ConfigValueKind.String)], Any.Client, Any.Later(60));
+        node.RegisterKeys([Any.Declare("timeout", ValueKind.String)], Any.Client, Any.Later(60));
 
         var registered = Assert.IsType<ConfigKeysRegistered>(Assert.Single(node.DequeueDomainEvents()));
 
@@ -67,22 +69,22 @@ public sealed class ConfigNodeKindChangeTests
         // rather than only being discoverable by diffing the log.
         var cleared = Assert.Single(registered.ClearedValues);
         Assert.Equal(Any.Key("timeout"), cleared.Key);
-        Assert.Equal(ConfigValue.Of(30L), cleared.Previous);
+        Assert.Equal(EntryValue.Of(30L), cleared.Previous);
         Assert.Null(cleared.Current);
 
         var change = Assert.Single(registered.SchemaChanges);
-        Assert.Equal(ConfigValueKind.Integer, change.PreviousKind);
-        Assert.Equal(ConfigValueKind.String, change.Kind);
+        Assert.Equal(ValueKind.Integer, change.PreviousKind);
+        Assert.Equal(ValueKind.String, change.NewKind);
     }
 
     [Fact]
     public void Reports_no_dropped_value_when_there_was_none_to_drop()
     {
         var node = ConfigNodeBuilder.AConfigNode()
-            .WithKey("timeout", ConfigValueKind.Integer)
+            .WithKey("timeout", ValueKind.Integer)
             .Build();
 
-        node.RegisterKeys([Any.Declare("timeout", ConfigValueKind.String)], Any.Client, Any.Later(60));
+        node.RegisterKeys([Any.Declare("timeout", ValueKind.String)], Any.Client, Any.Later(60));
 
         var registered = Assert.IsType<ConfigKeysRegistered>(Assert.Single(node.DequeueDomainEvents()));
         Assert.Equal([Any.Key("timeout")], registered.KindChanged);
@@ -93,14 +95,14 @@ public sealed class ConfigNodeKindChangeTests
     public void Lets_a_value_of_the_new_type_be_set_straight_away()
     {
         var node = ConfigNodeBuilder.AConfigNode()
-            .WithKey("timeout", ConfigValueKind.Integer)
-            .WithValue("timeout", ConfigValue.Of(30L))
+            .WithKey("timeout", ValueKind.Integer)
+            .WithValue("timeout", EntryValue.Of(30L))
             .Build();
 
-        node.RegisterKeys([Any.Declare("timeout", ConfigValueKind.String)], Any.Client, Any.Later(60));
-        node.SetValue(Any.Key("timeout"), ConfigValue.Of("30s"), Any.Human, Any.Later(90), ChangeReason.Manual());
+        node.RegisterKeys([Any.Declare("timeout", ValueKind.String)], Any.Client, Any.Later(60));
+        node.SetValue(Any.Key("timeout"), EntryValue.Of("30s"), Any.Human, Any.Later(90), ChangeReason.Manual());
 
-        Assert.Equal(KeyReadResult.Set(ConfigValue.Of("30s")), node.TryGetValue(Any.Key("timeout")));
+        Assert.Equal(KeyReadResult.Set(EntryValue.Of("30s")), node.TryGetValue(Any.Key("timeout")));
     }
 
     private static ConfigKeyView KeyIn(ConfigNode node, string name) =>

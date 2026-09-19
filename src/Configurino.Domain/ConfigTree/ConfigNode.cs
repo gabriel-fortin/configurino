@@ -1,14 +1,17 @@
 using System.Diagnostics;
 using org.g14.Configurino.Domain.Abstractions;
 using org.g14.Configurino.Domain.Access;
+using org.g14.Configurino.Domain.ConfigTree.Changes;
+using org.g14.Configurino.Domain.ConfigTree.Config;
 using org.g14.Configurino.Domain.ConfigTree.Events;
+using org.g14.Configurino.Domain.ConfigTree.Nodes;
 using org.g14.Configurino.Domain.Exceptions;
 
 namespace org.g14.Configurino.Domain.ConfigTree;
 
 /// <summary>
-/// The whole configuration of one service. A client application declares which keys exist here; people
-/// decide what they hold.
+/// A node representing a whole configuration of one service.
+/// A client application declares which keys exist here; people decide what values they hold.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -22,7 +25,7 @@ namespace org.g14.Configurino.Domain.ConfigTree;
 /// </remarks>
 public sealed class ConfigNode : AggregateRoot
 {
-    private readonly Dictionary<ConfigKeyName, ConfigKey> _keys = [];
+    private readonly Dictionary<EntryKey, ConfigEntry> _entries = [];
 
     private ConfigNode(NodeId id, NodeId parentId, NodeName name)
         : base(version: 0)
@@ -38,7 +41,7 @@ public sealed class ConfigNode : AggregateRoot
 
     public NodeName Name { get; }
 
-    public int KeyCount => _keys.Count;
+    public int EntriesCount => _entries.Count;
 
     /// <summary>
     /// Creates a config node under a grouping node. Taking the parent itself rather than its id is what
@@ -70,7 +73,7 @@ public sealed class ConfigNode : AggregateRoot
     /// does not bump the version, so a fleet of pods redeploying does not fill the audit trail with noise.
     /// </para>
     /// </remarks>
-    public void RegisterKeys(IReadOnlyCollection<KeyDeclaration> declarations, ActorId registrant, DateTimeOffset at)
+    public void RegisterKeys(IReadOnlyCollection<KeyRegistration> declarations, ActorId registrant, DateTimeOffset at)
     {
         ArgumentNullException.ThrowIfNull(declarations);
         ArgumentNullException.ThrowIfNull(registrant);
@@ -82,7 +85,7 @@ public sealed class ConfigNode : AggregateRoot
             throw new EmptyRegistrationException();
         }
 
-        var declared = new Dictionary<ConfigKeyName, ConfigValueKind>();
+        var declared = new Dictionary<EntryKey, ValueKind>();
 
         foreach (var declaration in declarations)
         {
@@ -101,14 +104,13 @@ public sealed class ConfigNode : AggregateRoot
 
         foreach (var declaration in declarations)
         {
-            if (!_keys.TryGetValue(declaration.Name, out var existing))
+            if (!_entries.TryGetValue(declaration.Name, out var existing))
             {
-                schemaChanges.Add(new SchemaChange(declaration.Name, SchemaChangeKind.Added, null, declaration.Kind));
+                schemaChanges.Add(SchemaChange.AddEntry(declaration.Name, declaration.Kind));
             }
             else if (existing.Kind != declaration.Kind)
             {
-                schemaChanges.Add(
-                    new SchemaChange(declaration.Name, SchemaChangeKind.KindChanged, existing.Kind, declaration.Kind));
+                schemaChanges.Add(SchemaChange.ChangeKind(declaration.Name, existing.Kind, declaration.Kind));
 
                 // changing the kind clears the value (if present)
                 if (existing.Value is not null)
@@ -118,18 +120,17 @@ public sealed class ConfigNode : AggregateRoot
             }
             else if (existing.Status == KeyStatus.Obsolete)
             {
-                schemaChanges.Add(
-                    new SchemaChange(declaration.Name, SchemaChangeKind.Reactivated, existing.Kind, declaration.Kind));
+                schemaChanges.Add(SchemaChange.Reactivate(declaration.Name, existing.Kind, declaration.Kind));
             }
         }
 
-        var abandoned = _keys.Values
+        var abandoned = _entries.Values
             .Where(key => key.Status == KeyStatus.Active && !declared.ContainsKey(key.Name))
             .OrderBy(key => key.Name.Value, StringComparer.Ordinal);
 
         foreach (var key in abandoned)
         {
-            schemaChanges.Add(new SchemaChange(key.Name, SchemaChangeKind.MarkedObsolete, key.Kind, key.Kind));
+            schemaChanges.Add(SchemaChange.MarkObsolete(key.Name, key.Kind));
         }
 
         if (schemaChanges.Count == 0)
@@ -146,19 +147,19 @@ public sealed class ConfigNode : AggregateRoot
             switch (change.Change)
             {
                 case SchemaChangeKind.Added:
-                    _keys.Add(change.Key, new ConfigKey(change.Key, change.Kind, stamp));
+                    _entries.Add(change.Key, new ConfigEntry(change.Key, change.NewKind, stamp));
                     break;
 
                 case SchemaChangeKind.KindChanged:
-                    _keys[change.Key].ChangeKind(change.Kind, stamp);
+                    _entries[change.Key].ChangeKind(change.NewKind, stamp);
                     break;
 
                 case SchemaChangeKind.Reactivated:
-                    _keys[change.Key].Reactivate(stamp);
+                    _entries[change.Key].Reactivate(stamp);
                     break;
 
                 case SchemaChangeKind.MarkedObsolete:
-                    _keys[change.Key].MarkObsolete(stamp);
+                    _entries[change.Key].MarkObsolete(stamp);
                     break;
 
                 default:
@@ -170,7 +171,7 @@ public sealed class ConfigNode : AggregateRoot
     }
 
     /// <summary>Gives one key a value.</summary>
-    public void SetValue(ConfigKeyName key, ConfigValue value, ActorId by, DateTimeOffset at, ChangeReason reason)
+    public void SetValue(EntryKey key, EntryValue value, ActorId by, DateTimeOffset at, ChangeReason reason)
     {
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(value);
@@ -190,8 +191,14 @@ public sealed class ConfigNode : AggregateRoot
     {
         ArgumentNullException.ThrowIfNull(assignments);
 
-        Dictionary<ConfigKeyName, ConfigValue?> targets = assignments
-            .ToDictionary(x => x.Name, ConfigValue? (x) => x.Value);
+        List<KeyValuePair<EntryKey, EntryValue?>> targets = new(assignments.Count);
+
+        foreach (var assignment in assignments)
+        {
+            ArgumentNullException.ThrowIfNull(assignment);
+
+            targets.Add(KeyValuePair.Create(assignment.Name, (EntryValue?)assignment.Value));
+        }
 
         ApplyChangeSet(targets, by, at, reason);
     }
@@ -201,14 +208,21 @@ public sealed class ConfigNode : AggregateRoot
     /// undoable, which means "not set" must be somewhere you can get back to and not just where you start.
     /// </summary>
     public void ClearValues(
-        IReadOnlyCollection<ConfigKeyName> keysToClear,
+        IReadOnlyCollection<EntryKey> keysToClear,
         ActorId by,
         DateTimeOffset at,
         ChangeReason reason)
     {
         ArgumentNullException.ThrowIfNull(keysToClear);
 
-        Dictionary<ConfigKeyName, ConfigValue?> targets = keysToClear.ToDictionary(x => x, ConfigValue? (_) => null);
+        List<KeyValuePair<EntryKey, EntryValue?>> targets = new(keysToClear.Count);
+
+        foreach (var key in keysToClear)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+
+            targets.Add(KeyValuePair.Create(key, (EntryValue?)null));
+        }
 
         ApplyChangeSet(targets, by, at, reason);
     }
@@ -217,11 +231,11 @@ public sealed class ConfigNode : AggregateRoot
     /// Reads one key. The three outcomes are kept apart on purpose: a key nobody registered and a key
     /// nobody has filled in call for very different things from a client application.
     /// </summary>
-    public KeyReadResult TryGetValue(ConfigKeyName key)
+    public KeyReadResult TryGetValue(EntryKey key)
     {
         ArgumentNullException.ThrowIfNull(key);
 
-        if (!_keys.TryGetValue(key, out var registered))
+        if (!_entries.TryGetValue(key, out var registered))
         {
             return KeyReadResult.Unknown;
         }
@@ -235,7 +249,7 @@ public sealed class ConfigNode : AggregateRoot
             Id,
             Version,
             [
-                .. _keys.Values
+                .. _entries.Values
                     .OrderBy(key => key.Name.Value, StringComparer.Ordinal)
                     .Select(key => new ConfigKeyView(key.Name, key.Kind, key.Status, key.Value, key.LastChange)),
             ]);
@@ -244,7 +258,7 @@ public sealed class ConfigNode : AggregateRoot
     /// The one path through which a value ever moves, so nothing can change without being recorded.
     /// </summary>
     private void ApplyChangeSet(
-        IReadOnlyDictionary<ConfigKeyName, ConfigValue?> targets,
+        IReadOnlyCollection<KeyValuePair<EntryKey, EntryValue?>> targets,
         ActorId by,
         DateTimeOffset at,
         ChangeReason reason)
@@ -255,7 +269,7 @@ public sealed class ConfigNode : AggregateRoot
         DateTimeOffset utc = RequireUtc(at, nameof(at));
 
         // keys we've seen so far in 'targets'
-        var seen = new HashSet<ConfigKeyName>();
+        var seen = new HashSet<EntryKey>();
 
         foreach (var (key, value) in targets)
         {
@@ -264,7 +278,7 @@ public sealed class ConfigNode : AggregateRoot
                 throw new DuplicateAssignmentException(key);
             }
 
-            if (!_keys.TryGetValue(key, out ConfigKey? existing))
+            if (!_entries.TryGetValue(key, out ConfigEntry? existing))
             {
                 throw new UnknownConfigKeyException(key);
             }
@@ -283,8 +297,8 @@ public sealed class ConfigNode : AggregateRoot
         // Assignments that change nothing are dropped, so pressing save without editing anything does not
         // fill the audit trail with entries saying nothing happened.
         var changes = targets
-            .Where(target => _keys[target.Key].Value != target.Value)
-            .Select(target => new ValueChange(target.Key, _keys[target.Key].Value, target.Value))
+            .Where(target => _entries[target.Key].Value != target.Value)
+            .Select(target => new ValueChange(target.Key, _entries[target.Key].Value, target.Value))
             .ToArray();
 
         if (changes.Length == 0)
@@ -298,11 +312,11 @@ public sealed class ConfigNode : AggregateRoot
 
         foreach (var change in changes)
         {
-            _keys[change.Key].Assign(change.Current, stamp);
+            _entries[change.Key].Assign(change.Current, stamp);
         }
 
         Raise(new ConfigValuesChanged(Id, ChangeSetId.New(), by, utc, Version, reason, changes));
     }
 
-    public override string ToString() => $"{Name} ({Id}), {_keys.Count} key(s) at v{Version}";
+    public override string ToString() => $"{Name} ({Id}), {_entries.Count} key(s) at v{Version}";
 }

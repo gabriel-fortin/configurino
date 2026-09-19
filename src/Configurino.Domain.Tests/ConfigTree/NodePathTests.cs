@@ -1,4 +1,4 @@
-using org.g14.Configurino.Domain.ConfigTree;
+using org.g14.Configurino.Domain.ConfigTree.Nodes;
 using org.g14.Configurino.Domain.Exceptions;
 
 namespace org.g14.Configurino.Domain.Tests;

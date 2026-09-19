@@ -1,4 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
+using org.g14.Configurino.Domain.ConfigTree.Changes;
+using org.g14.Configurino.Domain.ConfigTree.Config;
+using org.g14.Configurino.Domain.ConfigTree.Nodes;
 
 namespace org.g14.Configurino.Domain.ConfigTree;
 
@@ -43,10 +46,10 @@ public sealed class ConfigSnapshot
 public sealed class ConfigKeyView
 {
     public ConfigKeyView(
-        ConfigKeyName name,
-        ConfigValueKind kind,
+        EntryKey name,
+        ValueKind kind,
         KeyStatus status,
-        ConfigValue? value,
+        EntryValue? value,
         ChangeStamp lastChange)
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -59,14 +62,14 @@ public sealed class ConfigKeyView
         LastChange = lastChange;
     }
 
-    public ConfigKeyName Name { get; }
+    public EntryKey Name { get; }
 
-    public ConfigValueKind Kind { get; }
+    public ValueKind Kind { get; }
 
     public KeyStatus Status { get; }
 
     /// <summary>The value, or <c>null</c> when it has never been set. Guard reads with <see cref="IsSet"/>.</summary>
-    public ConfigValue? Value { get; }
+    public EntryValue? Value { get; }
 
     public ChangeStamp LastChange { get; }
 

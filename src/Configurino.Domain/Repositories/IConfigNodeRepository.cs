@@ -1,4 +1,5 @@
 using org.g14.Configurino.Domain.ConfigTree;
+using org.g14.Configurino.Domain.ConfigTree.Nodes;
 
 namespace org.g14.Configurino.Domain.Repositories;
 

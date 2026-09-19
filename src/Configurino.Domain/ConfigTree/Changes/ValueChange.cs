@@ -1,4 +1,6 @@
-namespace org.g14.Configurino.Domain.ConfigTree;
+using org.g14.Configurino.Domain.ConfigTree.Config;
+
+namespace org.g14.Configurino.Domain.ConfigTree.Changes;
 
 /// <summary>
 /// One key moving from one value to another, as recorded in the change log.
@@ -9,7 +11,7 @@ namespace org.g14.Configurino.Domain.ConfigTree;
 /// </remarks>
 public sealed record ValueChange
 {
-    public ValueChange(ConfigKeyName key, ConfigValue? previous, ConfigValue? current)
+    public ValueChange(EntryKey key, EntryValue? previous, EntryValue? current)
     {
         ArgumentNullException.ThrowIfNull(key);
 
@@ -23,13 +25,13 @@ public sealed record ValueChange
         Current = current;
     }
 
-    public ConfigKeyName Key { get; }
+    public EntryKey Key { get; }
 
     /// <summary>What the key held before, or <c>null</c> if it held nothing.</summary>
-    public ConfigValue? Previous { get; }
+    public EntryValue? Previous { get; }
 
     /// <summary>What the key holds now, or <c>null</c> if it was cleared.</summary>
-    public ConfigValue? Current { get; }
+    public EntryValue? Current { get; }
 
     public bool HadValue => Previous is not null;
 

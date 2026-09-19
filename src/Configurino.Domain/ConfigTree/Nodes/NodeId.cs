@@ -1,4 +1,4 @@
-namespace org.g14.Configurino.Domain.ConfigTree;
+namespace org.g14.Configurino.Domain.ConfigTree.Nodes;
 
 /// <summary>
 /// The identity of a node. Deliberately independent of where the node sits in the tree: a path is how

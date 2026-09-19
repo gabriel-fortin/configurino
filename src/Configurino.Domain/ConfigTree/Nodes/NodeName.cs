@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using org.g14.Configurino.Domain.Exceptions;
 
-namespace org.g14.Configurino.Domain.ConfigTree;
+namespace org.g14.Configurino.Domain.ConfigTree.Nodes;
 
 /// <summary>
 /// What a node is called among its siblings — one segment of a path, never a whole path.

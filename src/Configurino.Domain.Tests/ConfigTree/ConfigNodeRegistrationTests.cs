@@ -1,4 +1,5 @@
 using org.g14.Configurino.Domain.ConfigTree;
+using org.g14.Configurino.Domain.ConfigTree.Config;
 using org.g14.Configurino.Domain.ConfigTree.Events;
 using org.g14.Configurino.Domain.Exceptions;
 
@@ -12,7 +13,7 @@ public sealed class ConfigNodeRegistrationTests
         var node = ConfigNodeBuilder.AConfigNode().Build();
 
         node.RegisterKeys(
-            [Any.Declare("timeout", ConfigValueKind.Integer), Any.Declare("endpoint", ConfigValueKind.String)],
+            [Any.Declare("timeout", ValueKind.Integer), Any.Declare("endpoint", ValueKind.String)],
             Any.Client,
             Any.At);
 
@@ -27,12 +28,12 @@ public sealed class ConfigNodeRegistrationTests
     public void Registering_the_same_schema_again_changes_nothing_at_all()
     {
         var node = ConfigNodeBuilder.AConfigNode()
-            .WithKey("timeout", ConfigValueKind.Integer)
+            .WithKey("timeout", ValueKind.Integer)
             .Build();
 
         var versionBefore = node.Version;
 
-        node.RegisterKeys([Any.Declare("timeout", ConfigValueKind.Integer)], Any.Client, Any.Later(60));
+        node.RegisterKeys([Any.Declare("timeout", ValueKind.Integer)], Any.Client, Any.Later(60));
 
         // A fleet of pods redeploying unchanged must leave no trace, or the audit trail becomes noise.
         Assert.Equal(versionBefore, node.Version);
@@ -43,52 +44,52 @@ public sealed class ConfigNodeRegistrationTests
     public void A_key_that_is_no_longer_declared_is_kept_and_marked_obsolete()
     {
         var node = ConfigNodeBuilder.AConfigNode()
-            .WithKey("timeout", ConfigValueKind.Integer)
-            .WithKey("legacy", ConfigValueKind.String)
-            .WithValue("legacy", ConfigValue.Of("still in use"))
+            .WithKey("timeout", ValueKind.Integer)
+            .WithKey("legacy", ValueKind.String)
+            .WithValue("legacy", EntryValue.Of("still in use"))
             .Build();
 
-        node.RegisterKeys([Any.Declare("timeout", ConfigValueKind.Integer)], Any.Client, Any.Later(60));
+        node.RegisterKeys([Any.Declare("timeout", ValueKind.Integer)], Any.Client, Any.Later(60));
 
         var legacy = KeyIn(node, "legacy");
         Assert.Equal(KeyStatus.Obsolete, legacy.Status);
 
         // Kept on purpose: an older deployment still running may well be reading it.
         Assert.True(legacy.IsSet);
-        Assert.Equal(ConfigValue.Of("still in use"), legacy.Value);
+        Assert.Equal(EntryValue.Of("still in use"), legacy.Value);
     }
 
     [Fact]
     public void Declaring_an_obsolete_key_again_brings_it_back_with_the_value_it_had()
     {
         var node = ConfigNodeBuilder.AConfigNode()
-            .WithKey("timeout", ConfigValueKind.Integer)
-            .WithValue("timeout", ConfigValue.Of(30L))
+            .WithKey("timeout", ValueKind.Integer)
+            .WithValue("timeout", EntryValue.Of(30L))
             .Build();
 
-        node.RegisterKeys([Any.Declare("other", ConfigValueKind.String)], Any.Client, Any.Later(60));
+        node.RegisterKeys([Any.Declare("other", ValueKind.String)], Any.Client, Any.Later(60));
         Assert.Equal(KeyStatus.Obsolete, KeyIn(node, "timeout").Status);
 
         node.RegisterKeys(
-            [Any.Declare("timeout", ConfigValueKind.Integer), Any.Declare("other", ConfigValueKind.String)],
+            [Any.Declare("timeout", ValueKind.Integer), Any.Declare("other", ValueKind.String)],
             Any.Client,
             Any.Later(120));
 
         var timeout = KeyIn(node, "timeout");
         Assert.Equal(KeyStatus.Active, timeout.Status);
-        Assert.Equal(ConfigValue.Of(30L), timeout.Value);
+        Assert.Equal(EntryValue.Of(30L), timeout.Value);
     }
 
     [Fact]
     public void Reports_what_it_did_to_each_key()
     {
         var node = ConfigNodeBuilder.AConfigNode()
-            .WithKey("timeout", ConfigValueKind.Integer)
-            .WithKey("dropped", ConfigValueKind.String)
+            .WithKey("timeout", ValueKind.Integer)
+            .WithKey("dropped", ValueKind.String)
             .Build();
 
         node.RegisterKeys(
-            [Any.Declare("timeout", ConfigValueKind.Integer), Any.Declare("added", ConfigValueKind.Boolean)],
+            [Any.Declare("timeout", ValueKind.Integer), Any.Declare("added", ValueKind.Boolean)],
             Any.Client,
             Any.Later(60));
 
@@ -105,7 +106,7 @@ public sealed class ConfigNodeRegistrationTests
     public void Refuses_a_registration_that_declares_nothing()
     {
         var node = ConfigNodeBuilder.AConfigNode()
-            .WithKey("timeout", ConfigValueKind.Integer)
+            .WithKey("timeout", ValueKind.Integer)
             .Build();
 
         // An empty declaration would quietly obsolete the whole schema, which is a client bug every time.
@@ -119,11 +120,11 @@ public sealed class ConfigNodeRegistrationTests
         var node = ConfigNodeBuilder.AConfigNode().Build();
 
         Assert.Throws<DuplicateKeyDeclarationException>(() => node.RegisterKeys(
-            [Any.Declare("timeout", ConfigValueKind.Integer), Any.Declare("TIMEOUT", ConfigValueKind.String)],
+            [Any.Declare("timeout", ValueKind.Integer), Any.Declare("TIMEOUT", ValueKind.String)],
             Any.Client,
             Any.At));
 
-        Assert.Equal(0, node.KeyCount);
+        Assert.Equal(0, node.EntriesCount);
     }
 
     [Fact]
@@ -131,12 +132,12 @@ public sealed class ConfigNodeRegistrationTests
     {
         var node = ConfigNodeBuilder.AConfigNode().Build();
 
-        node.RegisterKeys([Any.Declare("a", ConfigValueKind.String)], Any.Client, Any.At);
-        node.RegisterKeys([Any.Declare("b", ConfigValueKind.String)], Any.Client, Any.Later(1));
-        node.RegisterKeys([Any.Declare("c", ConfigValueKind.String)], Any.Client, Any.Later(2));
-        node.RegisterKeys([Any.Declare("a", ConfigValueKind.String)], Any.Client, Any.Later(3));
+        node.RegisterKeys([Any.Declare("a", ValueKind.String)], Any.Client, Any.At);
+        node.RegisterKeys([Any.Declare("b", ValueKind.String)], Any.Client, Any.Later(1));
+        node.RegisterKeys([Any.Declare("c", ValueKind.String)], Any.Client, Any.Later(2));
+        node.RegisterKeys([Any.Declare("a", ValueKind.String)], Any.Client, Any.Later(3));
 
-        Assert.Equal(3, node.KeyCount);
+        Assert.Equal(3, node.EntriesCount);
     }
 
     [Fact]
@@ -144,7 +145,7 @@ public sealed class ConfigNodeRegistrationTests
     {
         var node = ConfigNodeBuilder.AConfigNode().Build();
 
-        node.RegisterKeys([Any.Declare("timeout", ConfigValueKind.Integer)], Any.Client, Any.At);
+        node.RegisterKeys([Any.Declare("timeout", ValueKind.Integer)], Any.Client, Any.At);
 
         var stamp = KeyIn(node, "timeout").LastChange;
         Assert.Equal(Any.Client, stamp.By);

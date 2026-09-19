@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using org.g14.Configurino.Domain.Exceptions;
 
-namespace org.g14.Configurino.Domain.ConfigTree;
+namespace org.g14.Configurino.Domain.ConfigTree.Config;
 
 /// <summary>
 /// The name of a single configuration key within a config node, as declared by a client application.
@@ -11,15 +11,15 @@ namespace org.g14.Configurino.Domain.ConfigTree;
 /// client applications can keep the hierarchical key names they already use, such as
 /// <c>db.pool.size</c>, without the domain reading any structure into them.
 /// </remarks>
-public sealed record ConfigKeyName
+public sealed record EntryKey
 {
     public const int MaxLength = 128;
 
-    private ConfigKeyName(string value) => Value = value;
+    private EntryKey(string value) => Value = value;
 
     public string Value { get; }
 
-    public static ConfigKeyName Parse(string? value)
+    public static EntryKey Parse(string? value)
     {
         if (!TryParse(value, out var name, out var reason))
         {
@@ -29,10 +29,10 @@ public sealed record ConfigKeyName
         return name;
     }
 
-    public static bool TryParse(string? value, [NotNullWhen(true)] out ConfigKeyName? name) =>
+    public static bool TryParse(string? value, [NotNullWhen(true)] out EntryKey? name) =>
         TryParse(value, out name, out _);
 
-    private static bool TryParse(string? value, [NotNullWhen(true)] out ConfigKeyName? name, out string reason)
+    private static bool TryParse(string? value, [NotNullWhen(true)] out EntryKey? name, out string reason)
     {
         name = null;
 
@@ -65,7 +65,7 @@ public sealed record ConfigKeyName
             }
         }
 
-        name = new ConfigKeyName(canonical);
+        name = new EntryKey(canonical);
         reason = string.Empty;
         return true;
     }

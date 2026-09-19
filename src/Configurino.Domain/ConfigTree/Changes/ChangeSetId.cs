@@ -1,4 +1,4 @@
-namespace org.g14.Configurino.Domain.ConfigTree;
+namespace org.g14.Configurino.Domain.ConfigTree.Changes;
 
 /// <summary>
 /// Groups everything one operation changed. A person editing five keys and pressing save produces one

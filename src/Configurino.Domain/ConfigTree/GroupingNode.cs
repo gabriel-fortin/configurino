@@ -1,12 +1,12 @@
 using org.g14.Configurino.Domain.Abstractions;
 using org.g14.Configurino.Domain.Access;
 using org.g14.Configurino.Domain.ConfigTree.Events;
+using org.g14.Configurino.Domain.ConfigTree.Nodes;
 
 namespace org.g14.Configurino.Domain.ConfigTree;
 
 /// <summary>
-/// A node that groups other nodes. Purely organisational: it holds no configuration of its own and
-/// nothing is inherited through it.
+/// A node that groups other nodes.
 /// </summary>
 /// <remarks>
 /// <para>

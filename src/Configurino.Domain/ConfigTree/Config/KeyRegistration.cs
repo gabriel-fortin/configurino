@@ -1,9 +1,9 @@
-namespace org.g14.Configurino.Domain.ConfigTree;
+namespace org.g14.Configurino.Domain.ConfigTree.Config;
 
 /// <summary>One key in a client application's registration: what it is called and what type it holds.</summary>
-public sealed record KeyDeclaration
+public sealed record KeyRegistration
 {
-    public KeyDeclaration(ConfigKeyName name, ConfigValueKind kind)
+    public KeyRegistration(EntryKey name, ValueKind kind)
     {
         ArgumentNullException.ThrowIfNull(name);
 
@@ -11,9 +11,9 @@ public sealed record KeyDeclaration
         Kind = kind;
     }
 
-    public ConfigKeyName Name { get; }
+    public EntryKey Name { get; }
 
-    public ConfigValueKind Kind { get; }
+    public ValueKind Kind { get; }
 
     public override string ToString() => $"{Name} : {Kind}";
 }

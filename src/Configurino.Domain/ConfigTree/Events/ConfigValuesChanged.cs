@@ -1,5 +1,7 @@
 using org.g14.Configurino.Domain.Abstractions;
 using org.g14.Configurino.Domain.Access;
+using org.g14.Configurino.Domain.ConfigTree.Changes;
+using org.g14.Configurino.Domain.ConfigTree.Nodes;
 
 namespace org.g14.Configurino.Domain.ConfigTree.Events;
 

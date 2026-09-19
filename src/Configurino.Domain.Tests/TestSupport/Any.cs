@@ -1,5 +1,7 @@
 using org.g14.Configurino.Domain.Access;
 using org.g14.Configurino.Domain.ConfigTree;
+using org.g14.Configurino.Domain.ConfigTree.Config;
+using org.g14.Configurino.Domain.ConfigTree.Nodes;
 
 namespace org.g14.Configurino.Domain.Tests;
 
@@ -18,9 +20,9 @@ public static class Any
 
     public static NodeName Name(string value) => NodeName.Parse(value);
 
-    public static ConfigKeyName Key(string value) => ConfigKeyName.Parse(value);
+    public static EntryKey Key(string value) => EntryKey.Parse(value);
 
-    public static KeyDeclaration Declare(string name, ConfigValueKind kind) => new(Key(name), kind);
+    public static KeyRegistration Declare(string name, ValueKind kind) => new(Key(name), kind);
 
     public static GroupingNode Root() => GroupingNode.CreateRoot(Human, At);
 }

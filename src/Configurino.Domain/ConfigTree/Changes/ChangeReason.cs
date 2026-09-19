@@ -1,4 +1,4 @@
-namespace org.g14.Configurino.Domain.ConfigTree;
+namespace org.g14.Configurino.Domain.ConfigTree.Changes;
 
 /// <summary>
 /// Why a change happened. Without it a rollback is indistinguishable from someone typing the old value

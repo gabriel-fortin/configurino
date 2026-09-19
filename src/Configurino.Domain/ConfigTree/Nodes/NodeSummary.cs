@@ -1,4 +1,4 @@
-namespace org.g14.Configurino.Domain.ConfigTree;
+namespace org.g14.Configurino.Domain.ConfigTree.Nodes;
 
 /// <summary>
 /// What browsing a grouping node returns for each child: enough to list and navigate the tree without

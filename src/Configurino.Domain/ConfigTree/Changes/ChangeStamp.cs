@@ -1,6 +1,6 @@
 using org.g14.Configurino.Domain.Access;
 
-namespace org.g14.Configurino.Domain.ConfigTree;
+namespace org.g14.Configurino.Domain.ConfigTree.Changes;
 
 /// <summary>
 /// Who last touched a key and when. Enough to show "last changed by" beside every key without going

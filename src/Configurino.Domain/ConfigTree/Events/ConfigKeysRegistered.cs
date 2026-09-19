@@ -1,5 +1,8 @@
 using org.g14.Configurino.Domain.Abstractions;
 using org.g14.Configurino.Domain.Access;
+using org.g14.Configurino.Domain.ConfigTree.Changes;
+using org.g14.Configurino.Domain.ConfigTree.Config;
+using org.g14.Configurino.Domain.ConfigTree.Nodes;
 
 namespace org.g14.Configurino.Domain.ConfigTree.Events;
 
@@ -56,14 +59,14 @@ public sealed record ConfigKeysRegistered : IDomainEvent
     /// </summary>
     public IReadOnlyList<ValueChange> ClearedValues => clearedValues;
 
-    public IReadOnlyList<ConfigKeyName> Added => KeysWhere(SchemaChangeKind.Added);
+    public IReadOnlyList<EntryKey> Added => KeysWhere(SchemaChangeKind.Added);
 
-    public IReadOnlyList<ConfigKeyName> Reactivated => KeysWhere(SchemaChangeKind.Reactivated);
+    public IReadOnlyList<EntryKey> Reactivated => KeysWhere(SchemaChangeKind.Reactivated);
 
-    public IReadOnlyList<ConfigKeyName> KindChanged => KeysWhere(SchemaChangeKind.KindChanged);
+    public IReadOnlyList<EntryKey> KindChanged => KeysWhere(SchemaChangeKind.KindChanged);
 
-    public IReadOnlyList<ConfigKeyName> MarkedObsolete => KeysWhere(SchemaChangeKind.MarkedObsolete);
+    public IReadOnlyList<EntryKey> MarkedObsolete => KeysWhere(SchemaChangeKind.MarkedObsolete);
 
-    private ConfigKeyName[] KeysWhere(SchemaChangeKind change) =>
+    private EntryKey[] KeysWhere(SchemaChangeKind change) =>
         [.. schemaChanges.Where(schemaChange => schemaChange.Change == change).Select(schemaChange => schemaChange.Key)];
 }

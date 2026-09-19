@@ -1,11 +1,11 @@
-using org.g14.Configurino.Domain.ConfigTree;
+using org.g14.Configurino.Domain.ConfigTree.Config;
 
 namespace org.g14.Configurino.Domain.Exceptions;
 
 /// <summary>A value was written whose kind differs from the kind the key was registered with.</summary>
 public sealed class ValueKindMismatchException : DomainException
 {
-    public ValueKindMismatchException(ConfigKeyName key, ConfigValueKind expected, ConfigValueKind actual)
+    public ValueKindMismatchException(EntryKey key, ValueKind expected, ValueKind actual)
         : base($"Key '{key}' is registered as {expected} but was given a {actual} value.")
     {
         Key = key;
@@ -13,9 +13,9 @@ public sealed class ValueKindMismatchException : DomainException
         Actual = actual;
     }
 
-    public ConfigKeyName Key { get; }
+    public EntryKey Key { get; }
 
-    public ConfigValueKind Expected { get; }
+    public ValueKind Expected { get; }
 
-    public ConfigValueKind Actual { get; }
+    public ValueKind Actual { get; }
 }

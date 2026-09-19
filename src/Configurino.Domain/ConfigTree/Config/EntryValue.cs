@@ -1,4 +1,4 @@
-namespace org.g14.Configurino.Domain.ConfigTree;
+namespace org.g14.Configurino.Domain.ConfigTree.Config;
 
 /// <summary>
 /// A value held against a registered key, carrying its own type so it can always be checked against
@@ -9,13 +9,13 @@ namespace org.g14.Configurino.Domain.ConfigTree;
 /// can extend it and a <c>switch</c> over the three cases is exhaustive in practice. Values of
 /// different kinds are never equal, because records compare their type before their contents.
 /// </remarks>
-public abstract record ConfigValue
+public abstract record EntryValue
 {
-    private protected ConfigValue()
+    private protected EntryValue()
     {
     }
 
-    public abstract ConfigValueKind Kind { get; }
+    public abstract ValueKind Kind { get; }
 
     public static StringValue Of(string value) => new(value);
 
@@ -25,7 +25,7 @@ public abstract record ConfigValue
 }
 
 /// <summary>Text, stored as given — no trimming, no canonicalisation.</summary>
-public sealed record StringValue : ConfigValue
+public sealed record StringValue : EntryValue
 {
     public StringValue(string value)
     {
@@ -36,7 +36,7 @@ public sealed record StringValue : ConfigValue
 
     public string Value { get; }
 
-    public override ConfigValueKind Kind => ConfigValueKind.String;
+    public override ValueKind Kind => ValueKind.String;
 
     public override string ToString() => Value;
 }
@@ -45,25 +45,25 @@ public sealed record StringValue : ConfigValue
 /// A whole number. 64-bit because configuration routinely holds milliseconds, byte sizes and epoch
 /// seconds, all of which outgrow 32 bits.
 /// </summary>
-public sealed record IntegerValue : ConfigValue
+public sealed record IntegerValue : EntryValue
 {
     public IntegerValue(long value) => Value = value;
 
     public long Value { get; }
 
-    public override ConfigValueKind Kind => ConfigValueKind.Integer;
+    public override ValueKind Kind => ValueKind.Integer;
 
     public override string ToString() => Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
 }
 
 /// <summary>A flag.</summary>
-public sealed record BooleanValue : ConfigValue
+public sealed record BooleanValue : EntryValue
 {
     public BooleanValue(bool value) => Value = value;
 
     public bool Value { get; }
 
-    public override ConfigValueKind Kind => ConfigValueKind.Boolean;
+    public override ValueKind Kind => ValueKind.Boolean;
 
     public override string ToString() => Value ? "true" : "false";
 }

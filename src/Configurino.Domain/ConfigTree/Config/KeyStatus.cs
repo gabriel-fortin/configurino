@@ -1,4 +1,4 @@
-namespace org.g14.Configurino.Domain.ConfigTree;
+namespace org.g14.Configurino.Domain.ConfigTree.Config;
 
 /// <summary>Whether a registered key is still declared by a client application.</summary>
 public enum KeyStatus

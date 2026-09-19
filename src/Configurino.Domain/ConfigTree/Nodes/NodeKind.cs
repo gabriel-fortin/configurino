@@ -1,4 +1,4 @@
-namespace org.g14.Configurino.Domain.ConfigTree;
+namespace org.g14.Configurino.Domain.ConfigTree.Nodes;
 
 /// <summary>Which of the two kinds of node this is.</summary>
 public enum NodeKind

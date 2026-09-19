@@ -1,4 +1,6 @@
 using org.g14.Configurino.Domain.ConfigTree;
+using org.g14.Configurino.Domain.ConfigTree.Changes;
+using org.g14.Configurino.Domain.ConfigTree.Config;
 
 namespace org.g14.Configurino.Domain.Tests;
 
@@ -8,18 +10,18 @@ namespace org.g14.Configurino.Domain.Tests;
 /// </summary>
 public sealed class ConfigNodeBuilder
 {
-    private readonly List<KeyDeclaration> declarations = [];
+    private readonly List<KeyRegistration> declarations = [];
     private readonly List<KeyAssignment> assignments = [];
 
     public static ConfigNodeBuilder AConfigNode() => new();
 
-    public ConfigNodeBuilder WithKey(string name, ConfigValueKind kind)
+    public ConfigNodeBuilder WithKey(string name, ValueKind kind)
     {
         declarations.Add(Any.Declare(name, kind));
         return this;
     }
 
-    public ConfigNodeBuilder WithValue(string name, ConfigValue value)
+    public ConfigNodeBuilder WithValue(string name, EntryValue value)
     {
         assignments.Add(new KeyAssignment(Any.Key(name), value));
         return this;

@@ -1,4 +1,4 @@
-using org.g14.Configurino.Domain.ConfigTree;
+using org.g14.Configurino.Domain.ConfigTree.Config;
 
 namespace org.g14.Configurino.Domain.Exceptions;
 
@@ -8,11 +8,11 @@ namespace org.g14.Configurino.Domain.Exceptions;
 /// </summary>
 public sealed class UnknownConfigKeyException : DomainException
 {
-    public UnknownConfigKeyException(ConfigKeyName key)
+    public UnknownConfigKeyException(EntryKey key)
         : base($"Key '{key}' is not registered on this config node.")
     {
         Key = key;
     }
 
-    public ConfigKeyName Key { get; }
+    public EntryKey Key { get; }
 }

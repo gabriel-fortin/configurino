@@ -1,4 +1,6 @@
 using org.g14.Configurino.Domain.ConfigTree;
+using org.g14.Configurino.Domain.ConfigTree.Changes;
+using org.g14.Configurino.Domain.ConfigTree.Config;
 using org.g14.Configurino.Domain.ConfigTree.Events;
 using org.g14.Configurino.Domain.Exceptions;
 
@@ -11,9 +13,9 @@ public sealed class ConfigNodeValueTests
     {
         var node = Node();
 
-        node.SetValue(Any.Key("timeout"), ConfigValue.Of(30L), Any.Human, Any.At, ChangeReason.Manual());
+        node.SetValue(Any.Key("timeout"), EntryValue.Of(30L), Any.Human, Any.At, ChangeReason.Manual());
 
-        Assert.Equal(KeyReadResult.Set(ConfigValue.Of(30L)), node.TryGetValue(Any.Key("timeout")));
+        Assert.Equal(KeyReadResult.Set(EntryValue.Of(30L)), node.TryGetValue(Any.Key("timeout")));
     }
 
     [Fact]
@@ -32,13 +34,13 @@ public sealed class ConfigNodeValueTests
 
         var mismatch = Assert.Throws<ValueKindMismatchException>(() => node.SetValue(
             Any.Key("timeout"),
-            ConfigValue.Of("half a minute"),
+            EntryValue.Of("half a minute"),
             Any.Human,
             Any.At,
             ChangeReason.Manual()));
 
-        Assert.Equal(ConfigValueKind.Integer, mismatch.Expected);
-        Assert.Equal(ConfigValueKind.String, mismatch.Actual);
+        Assert.Equal(ValueKind.Integer, mismatch.Expected);
+        Assert.Equal(ValueKind.String, mismatch.Actual);
     }
 
     [Fact]
@@ -48,7 +50,7 @@ public sealed class ConfigNodeValueTests
 
         Assert.Throws<UnknownConfigKeyException>(() => node.SetValue(
             Any.Key("invented"),
-            ConfigValue.Of("x"),
+            EntryValue.Of("x"),
             Any.Human,
             Any.At,
             ChangeReason.Manual()));
@@ -58,11 +60,11 @@ public sealed class ConfigNodeValueTests
     public void Refuses_a_key_no_client_declares_any_more()
     {
         var node = Node();
-        node.RegisterKeys([Any.Declare("other", ConfigValueKind.String)], Any.Client, Any.Later(1));
+        node.RegisterKeys([Any.Declare("other", ValueKind.String)], Any.Client, Any.Later(1));
 
         Assert.Throws<ObsoleteKeyException>(() => node.SetValue(
             Any.Key("timeout"),
-            ConfigValue.Of(30L),
+            EntryValue.Of(30L),
             Any.Human,
             Any.At,
             ChangeReason.Manual()));
@@ -75,8 +77,8 @@ public sealed class ConfigNodeValueTests
 
         Assert.Throws<ValueKindMismatchException>(() => node.SetValues(
             [
-                new KeyAssignment(Any.Key("timeout"), ConfigValue.Of(30L)),
-                new KeyAssignment(Any.Key("endpoint"), ConfigValue.Of(true)),
+                new KeyAssignment(Any.Key("timeout"), EntryValue.Of(30L)),
+                new KeyAssignment(Any.Key("endpoint"), EntryValue.Of(true)),
             ],
             Any.Human,
             Any.At,
@@ -93,8 +95,8 @@ public sealed class ConfigNodeValueTests
 
         Assert.Throws<DuplicateAssignmentException>(() => node.SetValues(
             [
-                new KeyAssignment(Any.Key("timeout"), ConfigValue.Of(30L)),
-                new KeyAssignment(Any.Key("timeout"), ConfigValue.Of(60L)),
+                new KeyAssignment(Any.Key("timeout"), EntryValue.Of(30L)),
+                new KeyAssignment(Any.Key("timeout"), EntryValue.Of(60L)),
             ],
             Any.Human,
             Any.At,
@@ -105,11 +107,11 @@ public sealed class ConfigNodeValueTests
     public void Setting_a_value_to_what_it_already_is_does_nothing()
     {
         var node = Node();
-        node.SetValue(Any.Key("timeout"), ConfigValue.Of(30L), Any.Human, Any.At, ChangeReason.Manual());
+        node.SetValue(Any.Key("timeout"), EntryValue.Of(30L), Any.Human, Any.At, ChangeReason.Manual());
         node.DequeueDomainEvents();
 
         var versionBefore = node.Version;
-        node.SetValue(Any.Key("timeout"), ConfigValue.Of(30L), Any.Human, Any.Later(5), ChangeReason.Manual());
+        node.SetValue(Any.Key("timeout"), EntryValue.Of(30L), Any.Human, Any.Later(5), ChangeReason.Manual());
 
         // Pressing save without editing anything must not fill the history with entries saying nothing.
         Assert.Equal(versionBefore, node.Version);
@@ -123,8 +125,8 @@ public sealed class ConfigNodeValueTests
 
         node.SetValues(
             [
-                new KeyAssignment(Any.Key("timeout"), ConfigValue.Of(30L)),
-                new KeyAssignment(Any.Key("endpoint"), ConfigValue.Of("https://example")),
+                new KeyAssignment(Any.Key("timeout"), EntryValue.Of(30L)),
+                new KeyAssignment(Any.Key("endpoint"), EntryValue.Of("https://example")),
             ],
             Any.Human,
             Any.At,
@@ -141,13 +143,13 @@ public sealed class ConfigNodeValueTests
     public void Only_the_keys_that_actually_moved_are_recorded()
     {
         var node = Node();
-        node.SetValue(Any.Key("timeout"), ConfigValue.Of(30L), Any.Human, Any.At, ChangeReason.Manual());
+        node.SetValue(Any.Key("timeout"), EntryValue.Of(30L), Any.Human, Any.At, ChangeReason.Manual());
         node.DequeueDomainEvents();
 
         node.SetValues(
             [
-                new KeyAssignment(Any.Key("timeout"), ConfigValue.Of(30L)),
-                new KeyAssignment(Any.Key("endpoint"), ConfigValue.Of("https://example")),
+                new KeyAssignment(Any.Key("timeout"), EntryValue.Of(30L)),
+                new KeyAssignment(Any.Key("endpoint"), EntryValue.Of("https://example")),
             ],
             Any.Human,
             Any.Later(5),
@@ -162,7 +164,7 @@ public sealed class ConfigNodeValueTests
     public void A_value_can_be_taken_back_off_a_key()
     {
         var node = Node();
-        node.SetValue(Any.Key("timeout"), ConfigValue.Of(30L), Any.Human, Any.At, ChangeReason.Manual());
+        node.SetValue(Any.Key("timeout"), EntryValue.Of(30L), Any.Human, Any.At, ChangeReason.Manual());
         node.DequeueDomainEvents();
 
         node.ClearValues([Any.Key("timeout")], Any.Human, Any.Later(5), ChangeReason.Manual("set by mistake"));
@@ -171,7 +173,7 @@ public sealed class ConfigNodeValueTests
 
         var changed = Assert.IsType<ConfigValuesChanged>(Assert.Single(node.DequeueDomainEvents()));
         var change = Assert.Single(changed.Changes);
-        Assert.Equal(ConfigValue.Of(30L), change.Previous);
+        Assert.Equal(EntryValue.Of(30L), change.Previous);
         Assert.Null(change.Current);
     }
 
@@ -190,7 +192,7 @@ public sealed class ConfigNodeValueTests
     {
         var node = Node();
 
-        node.SetValue(Any.Key("timeout"), ConfigValue.Of(30L), Any.Human, Any.Later(5), ChangeReason.Manual());
+        node.SetValue(Any.Key("timeout"), EntryValue.Of(30L), Any.Human, Any.Later(5), ChangeReason.Manual());
 
         var stamp = node.Snapshot().Keys.Single(key => key.Name == Any.Key("timeout")).LastChange;
         Assert.Equal(Any.Human, stamp.By);
@@ -206,14 +208,14 @@ public sealed class ConfigNodeValueTests
 
         Assert.Throws<ArgumentException>(() => node.SetValue(
             Any.Key("timeout"),
-            ConfigValue.Of(30L),
+            EntryValue.Of(30L),
             Any.Human,
             localTime,
             ChangeReason.Manual()));
     }
 
     private static ConfigNode Node() => ConfigNodeBuilder.AConfigNode()
-        .WithKey("timeout", ConfigValueKind.Integer)
-        .WithKey("endpoint", ConfigValueKind.String)
+        .WithKey("timeout", ValueKind.Integer)
+        .WithKey("endpoint", ValueKind.String)
         .Build();
 }

@@ -1,4 +1,4 @@
-using org.g14.Configurino.Domain.ConfigTree;
+using org.g14.Configurino.Domain.ConfigTree.Config;
 
 namespace org.g14.Configurino.Domain.Exceptions;
 
@@ -8,11 +8,11 @@ namespace org.g14.Configurino.Domain.Exceptions;
 /// </summary>
 public sealed class ObsoleteKeyException : DomainException
 {
-    public ObsoleteKeyException(ConfigKeyName key)
+    public ObsoleteKeyException(EntryKey key)
         : base($"Key '{key}' is obsolete; it must be registered again before its value can change.")
     {
         Key = key;
     }
 
-    public ConfigKeyName Key { get; }
+    public EntryKey Key { get; }
 }
