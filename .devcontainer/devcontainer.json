@@ -1,0 +1,12 @@
+{
+    "name": ".NET dev container for Configurino",
+    "image": "mcr.microsoft.com/devcontainers/dotnet:1-10.0",
+    "remoteUser": "root",
+    "customizations": {
+      "jetbrains": {
+        "backend": "Rider"
+      }
+    },
+    "postCreateCommand": "dotnet restore src/Configurino.slnx"
+}
+
