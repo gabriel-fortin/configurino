@@ -11,7 +11,7 @@ namespace org.g14.Configurino.Domain.Abstractions;
 /// </remarks>
 public abstract class AggregateRoot
 {
-    private readonly List<IDomainEvent> domainEvents = [];
+    private readonly List<IDomainEvent> _domainEvents = [];
 
     protected AggregateRoot(int version)
     {
@@ -31,8 +31,8 @@ public abstract class AggregateRoot
     /// </remarks>
     public IReadOnlyList<IDomainEvent> DequeueDomainEvents()
     {
-        var dequeued = domainEvents.ToArray();
-        domainEvents.Clear();
+        var dequeued = _domainEvents.ToArray();
+        _domainEvents.Clear();
         return dequeued;
     }
 
@@ -46,7 +46,7 @@ public abstract class AggregateRoot
     {
         ArgumentNullException.ThrowIfNull(domainEvent);
 
-        domainEvents.Add(domainEvent);
+        _domainEvents.Add(domainEvent);
     }
 
     /// <summary>
