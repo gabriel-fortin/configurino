@@ -21,7 +21,7 @@ public sealed class NodePathTests
 
         Assert.True(root.IsRoot);
         Assert.Empty(root.Segments);
-        Assert.Null(root.Name);
+        Assert.Equal("/", root.Value);
         Assert.Null(root.Parent);
     }
 
@@ -30,7 +30,7 @@ public sealed class NodePathTests
     {
         var path = NodePath.Parse("/prod/billing");
 
-        Assert.Equal(Any.Name("billing"), path.Name);
+        Assert.EndsWith("/billing", path.Value);
         Assert.Equal(NodePath.Parse("/prod"), path.Parent);
         Assert.Equal(2, path.Depth);
     }

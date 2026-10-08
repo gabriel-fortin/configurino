@@ -25,9 +25,6 @@ public sealed record NodePath
 
     public int Depth => _segments.Length;
 
-    /// <summary>The last segment, or <c>null</c> at the root, which has no name of its own.</summary>
-    public NodeName? Name => IsRoot ? null : _segments[^1];
-
     /// <summary>The path this one sits under, or <c>null</c> at the root.</summary>
     public NodePath? Parent => IsRoot ? null : new NodePath(_segments[..^1]);
 
