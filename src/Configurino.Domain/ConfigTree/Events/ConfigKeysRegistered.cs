@@ -12,7 +12,7 @@ namespace org.g14.Configurino.Domain.ConfigTree.Events;
 /// </summary>
 public sealed record ConfigKeysRegistered : IDomainEvent
 {
-    private readonly SchemaChange[] schemaChanges;
+    private readonly KeyChange[] schemaChanges;
     private readonly ValueChange[] clearedValues;
 
     public ConfigKeysRegistered(
@@ -21,7 +21,7 @@ public sealed record ConfigKeysRegistered : IDomainEvent
         ActorId registrant,
         DateTimeOffset occurredAt,
         int version,
-        IReadOnlyCollection<SchemaChange> schemaChanges,
+        IReadOnlyCollection<KeyChange> schemaChanges,
         IReadOnlyCollection<ValueChange> clearedValues)
     {
         ArgumentNullException.ThrowIfNull(nodeId);
@@ -50,7 +50,7 @@ public sealed record ConfigKeysRegistered : IDomainEvent
 
     public int Version { get; }
 
-    public IReadOnlyList<SchemaChange> SchemaChanges => schemaChanges;
+    public IReadOnlyList<KeyChange> SchemaChanges => schemaChanges;
 
     /// <summary>
     /// Values dropped because their key was declared with a different type. This is the one way a
@@ -59,14 +59,14 @@ public sealed record ConfigKeysRegistered : IDomainEvent
     /// </summary>
     public IReadOnlyList<ValueChange> ClearedValues => clearedValues;
 
-    public IReadOnlyList<EntryKey> Added => KeysWhere(SchemaChangeKind.Added);
+    public IReadOnlyList<EntryKey> Added => KeysWhere(KeyChangeKind.Added);
 
-    public IReadOnlyList<EntryKey> Reactivated => KeysWhere(SchemaChangeKind.Reactivated);
+    public IReadOnlyList<EntryKey> Reactivated => KeysWhere(KeyChangeKind.Reactivated);
 
-    public IReadOnlyList<EntryKey> KindChanged => KeysWhere(SchemaChangeKind.KindChanged);
+    public IReadOnlyList<EntryKey> KindChanged => KeysWhere(KeyChangeKind.KindChanged);
 
-    public IReadOnlyList<EntryKey> MarkedObsolete => KeysWhere(SchemaChangeKind.MarkedObsolete);
+    public IReadOnlyList<EntryKey> MarkedObsolete => KeysWhere(KeyChangeKind.MarkedObsolete);
 
-    private EntryKey[] KeysWhere(SchemaChangeKind change) =>
+    private EntryKey[] KeysWhere(KeyChangeKind change) =>
         [.. schemaChanges.Where(schemaChange => schemaChange.Change == change).Select(schemaChange => schemaChange.Key)];
 }

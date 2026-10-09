@@ -30,7 +30,7 @@ namespace org.g14.Configurino.Domain.ChangeLog;
 public sealed class ConfigChangeEntry
 {
     private readonly ValueChange[] valueChanges;
-    private readonly SchemaChange[] schemaChanges;
+    private readonly KeyChange[] schemaChanges;
 
     private ConfigChangeEntry(
         ChangeSetId id,
@@ -40,7 +40,7 @@ public sealed class ConfigChangeEntry
         int nodeVersion,
         ChangeReason reason,
         ValueChange[] valueChanges,
-        SchemaChange[] schemaChanges)
+        KeyChange[] schemaChanges)
     {
         Id = id;
         NodeId = nodeId;
@@ -73,7 +73,7 @@ public sealed class ConfigChangeEntry
     public IReadOnlyList<ValueChange> ValueChanges => valueChanges;
 
     /// <summary>Keys whose declaration moved. Empty for an ordinary edit.</summary>
-    public IReadOnlyList<SchemaChange> SchemaChanges => schemaChanges;
+    public IReadOnlyList<KeyChange> SchemaChanges => schemaChanges;
 
     /// <summary>Records what a person changed.</summary>
     public static ConfigChangeEntry From(ConfigValuesChanged change)

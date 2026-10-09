@@ -99,18 +99,18 @@ public sealed class ConfigNode : AggregateRoot
 
         // Work out what would change before changing anything: that way a rejected registration leaves
         // the node untouched, and one that changes nothing leaves no trace at all.
-        var schemaChanges = new List<SchemaChange>();
+        var schemaChanges = new List<KeyChange>();
         var clearedValues = new List<ValueChange>();
 
         foreach (var declaration in declarations)
         {
             if (!_entries.TryGetValue(declaration.Name, out var existing))
             {
-                schemaChanges.Add(SchemaChange.AddEntry(declaration.Name, declaration.Kind));
+                schemaChanges.Add(KeyChange.AddEntry(declaration.Name, declaration.Kind));
             }
             else if (existing.Kind != declaration.Kind)
             {
-                schemaChanges.Add(SchemaChange.ChangeKind(declaration.Name, existing.Kind, declaration.Kind));
+                schemaChanges.Add(KeyChange.ChangeKind(declaration.Name, existing.Kind, declaration.Kind));
 
                 // changing the kind clears the value (if present)
                 if (existing.Value is not null)
@@ -120,7 +120,7 @@ public sealed class ConfigNode : AggregateRoot
             }
             else if (existing.Status == KeyStatus.Obsolete)
             {
-                schemaChanges.Add(SchemaChange.Reactivate(declaration.Name, existing.Kind, declaration.Kind));
+                schemaChanges.Add(KeyChange.Reactivate(declaration.Name, existing.Kind, declaration.Kind));
             }
         }
 
@@ -130,7 +130,7 @@ public sealed class ConfigNode : AggregateRoot
 
         foreach (var key in abandoned)
         {
-            schemaChanges.Add(SchemaChange.MarkObsolete(key.Name, key.Kind));
+            schemaChanges.Add(KeyChange.MarkObsolete(key.Name, key.Kind));
         }
 
         if (schemaChanges.Count == 0)
@@ -146,19 +146,19 @@ public sealed class ConfigNode : AggregateRoot
         {
             switch (change.Change)
             {
-                case SchemaChangeKind.Added:
+                case KeyChangeKind.Added:
                     _entries.Add(change.Key, new ConfigEntry(change.Key, change.NewKind, stamp));
                     break;
 
-                case SchemaChangeKind.KindChanged:
+                case KeyChangeKind.KindChanged:
                     _entries[change.Key].ChangeKind(change.NewKind, stamp);
                     break;
 
-                case SchemaChangeKind.Reactivated:
+                case KeyChangeKind.Reactivated:
                     _entries[change.Key].Reactivate(stamp);
                     break;
 
-                case SchemaChangeKind.MarkedObsolete:
+                case KeyChangeKind.MarkedObsolete:
                     _entries[change.Key].MarkObsolete(stamp);
                     break;
 

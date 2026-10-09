@@ -1,7 +1,7 @@
 namespace org.g14.Configurino.Domain.ConfigTree.Changes;
 
 /// <summary>What a registration did to one key.</summary>
-public enum SchemaChangeKind
+public enum KeyChangeKind
 {
     /// <summary>The key had never been registered here before.</summary>
     Added = 1,
