@@ -189,6 +189,9 @@ public sealed class ConfigNode : AggregateRoot
         DateTimeOffset at,
         ChangeReason reason)
     {
+        // TODO: can we remove the ClearValues method if we allowed KeyAssignment to have a null EntryValue?
+                // Does it make sense to squeeze 'set' and 'clear' into one method, in the first place?
+                
         ArgumentNullException.ThrowIfNull(assignments);
 
         List<KeyValuePair<EntryKey, EntryValue?>> targets = new(assignments.Count);

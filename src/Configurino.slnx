@@ -7,6 +7,8 @@
     <File Path="..\.gitignore" />
     <File Path="Directory.Build.props" />
   </Folder>
+  <Project Path="Configurino.Application.Tests/Configurino.Application.Tests.csproj" />
+  <Project Path="Configurino.Application/Configurino.Application.csproj" />
   <Project Path="Configurino.Domain.Tests/Configurino.Domain.Tests.csproj" />
   <Project Path="Configurino.Domain\Configurino.Domain.csproj" />
 </Solution>

@@ -41,3 +41,20 @@ The following node types can exist in the config tree:
   ├── Changes/                 the vocabulary of "something changed"
       └ ...
 ```
+
+
+# [tech] Known gaps
+
+Things the domain and application layers deliberately leave open for now:
+
+- **No way to rebuild a `ConfigNode` from stored state.** Its constructor is private and always starts at
+  version 0, so Infrastructure will need a rehydration path (an internal factory or a persistence-state type).
+  The in-memory test store keeps live instances meanwhile.
+- **No cheap "version only" read.** `GetConfigSnapshot` with a known version still loads the whole aggregate.
+  Add a dedicated read port only if polling load shows it matters.
+- **No expected version on person edits.** `SetValues`/`ClearValues` are checked against the stored version
+  at save time, but not against the version the person was looking at, so an edit made from a stale screen
+  is applied rather than rejected.
+- **A rollback mixing restored and cleared keys produces two change sets.** The domain has no operation that
+  sets some keys and clears others as one change, so both are applied and saved atomically in one `Save`,
+  but they appear as two history entries sharing the same rollback reason.

@@ -3,7 +3,7 @@
 The project follows the clean architecture approach. The following layers exist:
 
 - Domain
-- Service
+- Application
 - Infrastructure
 
 More layers might be created once it's decided what they need to be.
@@ -30,3 +30,11 @@ every time:
 Prefer one literal root and let the tool recurse: `grep -rn --include="*.cs" "x" /abs/path`.
 
 If something outside the working directories is genuinely needed, ask instead of retrying.
+
+# Code conventions
+
+Use `var` only if the type is obvious from the right side.
+
+# Behaviours
+
+Do not implement TODOs eagerly, they might be notes for later.

@@ -1,10 +1,10 @@
 using org.g14.Configurino.Domain.ConfigTree.Nodes;
+using org.g14.Configurino.Domain.Exceptions;
 
-namespace org.g14.Configurino.Domain.Exceptions;
+namespace org.g14.Configurino.Application.Nodes;
 
 /// <summary>
-/// No config node exists at the requested location. Config nodes are created by people, never
-/// implicitly by a registering client, so a client's first deployment fails until someone creates it.
+/// No config node exists at the requested location
 /// </summary>
 public sealed class ConfigNodeNotFoundException : DomainException
 {

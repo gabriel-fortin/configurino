@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <ItemGroup>
+        <ProjectReference Include="..\Configurino.Domain\Configurino.Domain.csproj" />
+    </ItemGroup>
+
+</Project>
