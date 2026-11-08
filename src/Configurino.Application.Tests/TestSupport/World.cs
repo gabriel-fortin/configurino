@@ -1,3 +1,7 @@
+using org.g14.Configurino.Application.Access;
+using org.g14.Configurino.Application.Access.GetAccessList;
+using org.g14.Configurino.Application.Access.GetEffectiveRights;
+using org.g14.Configurino.Application.Access.SetRole;
 using org.g14.Configurino.Application.Config.ClearValues;
 using org.g14.Configurino.Application.Config.GetConfigSnapshot;
 using org.g14.Configurino.Application.Config.GetValue;
@@ -23,8 +27,13 @@ namespace org.g14.Configurino.Application.Tests;
 /// </summary>
 public sealed class World
 {
+    /// <summary>A person, the first to use the application, and so owner of the whole tree.</summary>
     public static readonly ActorId Human = ActorId.Parse("Leon");
+
     public static readonly ActorId Client = ActorId.Parse("billing-api@v1");
+
+    /// <summary>Someone nobody has granted anything.</summary>
+    public static readonly ActorId Stranger = ActorId.Parse("Mallory");
 
     public static readonly DateTimeOffset Start = new(2026, 9, 19, 10, 0, 0, TimeSpan.Zero);
 
@@ -32,26 +41,32 @@ public sealed class World
     {
         Store = new InMemoryStore();
         Time = new FixedTimeProvider(Start);
+        Guard = new AccessGuard(Store, Store);
 
         var locator = new NodeLocator(Store, Store, Store);
 
-        EnsureRoot = new EnsureRootHandler(Store, Time);
-        CreateGroupingNode = new CreateGroupingNodeHandler(locator, Store, Time);
-        CreateConfigNode = new CreateConfigNodeHandler(locator, Store, Time);
-        GetChildren = new GetChildrenHandler(locator, Store);
-        RegisterKeys = new RegisterKeysHandler(locator, Store, Time);
-        SetValues = new SetValuesHandler(locator, Store, Time);
-        ClearValues = new ClearValuesHandler(locator, Store, Time);
-        Rollback = new RollbackHandler(locator, Store, Store, Time);
-        GetConfigSnapshot = new GetConfigSnapshotHandler(locator);
-        GetValue = new GetValueHandler(locator);
-        GetChangeHistory = new GetChangeHistoryHandler(locator, Store);
-        GetChangeSet = new GetChangeSetHandler(locator, Store);
+        EnsureRoot = new EnsureRootHandler(Store, Store, Time);
+        CreateGroupingNode = new CreateGroupingNodeHandler(locator, Guard, Store, Time);
+        CreateConfigNode = new CreateConfigNodeHandler(locator, Guard, Store, Time);
+        GetChildren = new GetChildrenHandler(locator, Guard, Store);
+        RegisterKeys = new RegisterKeysHandler(locator, Guard, Store, Time);
+        SetValues = new SetValuesHandler(locator, Guard, Store, Time);
+        ClearValues = new ClearValuesHandler(locator, Guard, Store, Time);
+        Rollback = new RollbackHandler(locator, Guard, Store, Store, Time);
+        GetConfigSnapshot = new GetConfigSnapshotHandler(locator, Guard);
+        GetValue = new GetValueHandler(locator, Guard);
+        GetChangeHistory = new GetChangeHistoryHandler(locator, Guard, Store);
+        GetChangeSet = new GetChangeSetHandler(locator, Guard, Store);
+        SetRole = new SetRoleHandler(locator, Guard, Store, Time);
+        GetAccessList = new GetAccessListHandler(locator, Guard, Store, Store);
+        GetEffectiveRights = new GetEffectiveRightsHandler(locator, Guard);
     }
 
     public InMemoryStore Store { get; }
 
     public FixedTimeProvider Time { get; }
+
+    public AccessGuard Guard { get; }
 
     public EnsureRootHandler EnsureRoot { get; }
 
@@ -77,6 +92,12 @@ public sealed class World
 
     public GetChangeSetHandler GetChangeSet { get; }
 
+    public SetRoleHandler SetRole { get; }
+
+    public GetAccessListHandler GetAccessList { get; }
+
+    public GetEffectiveRightsHandler GetEffectiveRights { get; }
+
     public static NodePath Path(string value) => NodePath.Parse(value);
 
     public static NodeName Name(string value) => NodeName.Parse(value);
@@ -87,14 +108,30 @@ public sealed class World
 
     public static KeyAssignment Assign(string name, string value) => new(Key(name), EntryValue.Of(value));
 
-    /// <summary>A root with a <c>/prod</c> group holding an empty <c>/prod/billing</c> config node.</summary>
-    public static async Task<World> WithBillingNode()
+    /// <summary><see cref="Human"/> using the application first, which creates the root and makes them its owner.</summary>
+    public static EnsureRootCommand StartUp { get; } = new(Human);
+
+    /// <summary>A world with just the root, owned by <see cref="Human"/>.</summary>
+    public static async Task<World> WithRoot()
     {
         var world = new World();
 
-        await world.EnsureRoot.Handle(new EnsureRootCommand(Human));
+        await world.EnsureRoot.Handle(StartUp);
+
+        return world;
+    }
+
+    /// <summary>
+    /// A root with a <c>/prod</c> group holding an empty <c>/prod/billing</c> config node, which
+    /// <see cref="Client"/> may read and register keys on.
+    /// </summary>
+    public static async Task<World> WithBillingNode()
+    {
+        var world = await WithRoot();
+
         await world.CreateGroupingNode.Handle(new CreateGroupingNodeCommand(NodePath.Root, Name("prod"), Human));
         await world.CreateConfigNode.Handle(new CreateConfigNodeCommand(Path("/prod"), Name("billing"), Human));
+        await world.SetRole.Handle(new SetRoleCommand(Billing, Client, Role.ClientApp, Human));
 
         return world;
     }

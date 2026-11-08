@@ -33,7 +33,8 @@ If something outside the working directories is genuinely needed, ask instead of
 
 # Code conventions
 
-Use `var` only if the type is obvious from the right side.
+Use `var` only if the type is obvious from the right side. The type is obvious if it's 
+a literal or a constructor.
 
 # Behaviours
 

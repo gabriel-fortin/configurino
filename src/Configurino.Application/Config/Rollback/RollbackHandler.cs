@@ -1,5 +1,7 @@
+using org.g14.Configurino.Application.Access;
 using org.g14.Configurino.Application.History;
 using org.g14.Configurino.Application.Nodes;
+using org.g14.Configurino.Domain.Access;
 using org.g14.Configurino.Domain.ConfigTree.Changes;
 using org.g14.Configurino.Domain.ConfigTree.Config;
 using org.g14.Configurino.Domain.Repositories;
@@ -9,22 +11,26 @@ namespace org.g14.Configurino.Application.Config.Rollback;
 public sealed class RollbackHandler
 {
     private readonly NodeLocator _locator;
+    private readonly AccessGuard _access;
     private readonly IConfigChangeLog _changeLog;
     private readonly IConfigNodeRepository _configNodes;
     private readonly TimeProvider _time;
 
     public RollbackHandler(
         NodeLocator locator,
+        AccessGuard access,
         IConfigChangeLog changeLog,
         IConfigNodeRepository configNodes,
         TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(locator);
+        ArgumentNullException.ThrowIfNull(access);
         ArgumentNullException.ThrowIfNull(changeLog);
         ArgumentNullException.ThrowIfNull(configNodes);
         ArgumentNullException.ThrowIfNull(time);
 
         _locator = locator;
+        _access = access;
         _changeLog = changeLog;
         _configNodes = configNodes;
         _time = time;
@@ -40,6 +46,7 @@ public sealed class RollbackHandler
         ArgumentNullException.ThrowIfNull(command);
 
         var node = await _locator.LoadConfigNode(command.Path, cancellationToken);
+        await _access.Demand(command.By, node.Id, command.Path, NodeRight.EditValues, cancellationToken);
 
         var entry = await _changeLog.GetChangeSet(command.Target, cancellationToken);
 

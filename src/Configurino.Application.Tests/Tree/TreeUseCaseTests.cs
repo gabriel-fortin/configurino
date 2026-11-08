@@ -1,7 +1,6 @@
 using org.g14.Configurino.Application.Nodes;
 using org.g14.Configurino.Application.Tree.CreateConfigNode;
 using org.g14.Configurino.Application.Tree.CreateGroupingNode;
-using org.g14.Configurino.Application.Tree.EnsureRoot;
 using org.g14.Configurino.Application.Tree.GetChildren;
 using org.g14.Configurino.Domain.ConfigTree.Nodes;
 using org.g14.Configurino.Domain.Exceptions;
@@ -15,8 +14,8 @@ public class TreeUseCaseTests
     {
         var world = new World();
 
-        await world.EnsureRoot.Handle(new EnsureRootCommand(World.Human));
-        await world.EnsureRoot.Handle(new EnsureRootCommand(World.Human));
+        await world.EnsureRoot.Handle(World.StartUp);
+        await world.EnsureRoot.Handle(World.StartUp);
 
         Assert.Equal(NodeId.Root, await world.Store.Resolve(NodePath.Root));
     }
@@ -24,8 +23,7 @@ public class TreeUseCaseTests
     [Fact]
     public async Task CreateGroupingNode_returns_the_new_node_and_its_path()
     {
-        var world = new World();
-        await world.EnsureRoot.Handle(new EnsureRootCommand(World.Human));
+        var world = await World.WithRoot();
 
         var created = await world.CreateGroupingNode.Handle(
             new CreateGroupingNodeCommand(NodePath.Root, World.Name("prod"), World.Human));
@@ -71,8 +69,7 @@ public class TreeUseCaseTests
     [Fact]
     public async Task Creating_under_a_missing_parent_says_the_parent_is_missing()
     {
-        var world = new World();
-        await world.EnsureRoot.Handle(new EnsureRootCommand(World.Human));
+        var world = await World.WithRoot();
 
         await Assert.ThrowsAsync<GroupingNodeNotFoundException>(() =>
             world.CreateGroupingNode.Handle(
@@ -86,7 +83,7 @@ public class TreeUseCaseTests
         await world.CreateGroupingNode.Handle(
             new CreateGroupingNodeCommand(World.Path("/prod"), World.Name("analytics"), World.Human));
 
-        var children = await world.GetChildren.Handle(new GetChildrenQuery(World.Path("/prod")));
+        var children = await world.GetChildren.Handle(new GetChildrenQuery(World.Path("/prod"), World.Human));
 
         Assert.Equal(["analytics", "billing"], children.Select(child => child.Name.Value));
         Assert.Equal([NodeKind.Grouping, NodeKind.Config], children.Select(child => child.Kind));
@@ -98,6 +95,6 @@ public class TreeUseCaseTests
         var world = await World.WithBillingNode();
 
         await Assert.ThrowsAsync<NodeKindMismatchException>(() =>
-            world.GetChildren.Handle(new GetChildrenQuery(World.Billing)));
+            world.GetChildren.Handle(new GetChildrenQuery(World.Billing, World.Human)));
     }
 }

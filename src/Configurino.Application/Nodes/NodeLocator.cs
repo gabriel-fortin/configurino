@@ -1,6 +1,5 @@
 using org.g14.Configurino.Domain.ConfigTree;
 using org.g14.Configurino.Domain.ConfigTree.Nodes;
-using org.g14.Configurino.Domain.Exceptions;
 using org.g14.Configurino.Domain.Repositories;
 
 namespace org.g14.Configurino.Application.Nodes;
@@ -28,6 +27,17 @@ public sealed class NodeLocator
         _directory = directory;
         _groupingNodes = groupingNodes;
         _configNodes = configNodes;
+    }
+
+    /// <summary>Finds the id of the node at a path, whatever its kind, without loading it.</summary>
+    /// <exception cref="NodeNotFoundException">
+    /// Nothing exists at <paramref name="path"/>.
+    /// </exception>
+    public async Task<NodeId> ResolveId(NodePath path, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+
+        return await _directory.Resolve(path, cancellationToken) ?? throw new NodeNotFoundException(path);
     }
 
     /// <summary>Finds the id of the grouping node at a path, without loading it.</summary>

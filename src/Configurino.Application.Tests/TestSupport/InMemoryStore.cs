@@ -1,3 +1,5 @@
+using org.g14.Configurino.Domain.Abstractions;
+using org.g14.Configurino.Domain.Access;
 using org.g14.Configurino.Domain.ChangeLog;
 using org.g14.Configurino.Domain.ConfigTree;
 using org.g14.Configurino.Domain.ConfigTree.Changes;
@@ -9,23 +11,29 @@ using org.g14.Configurino.Domain.Repositories;
 namespace org.g14.Configurino.Application.Tests;
 
 /// <summary>
-/// One in-memory stand-in for all four domain ports, so a test can use the handlers end to end.
+/// One in-memory stand-in for all the domain ports, so a test can use the handlers end to end.
 /// It keeps live aggregate instances, so it does not model version-based conflicts; a test that needs
 /// them supplies its own repository.
 /// </summary>
 public sealed class InMemoryStore :
     IGroupingNodeRepository,
     IConfigNodeRepository,
+    INodeAccessListRepository,
     INodeDirectory,
     IConfigChangeLog
 {
     private readonly Dictionary<NodeId, GroupingNode> _groupingNodes = [];
     private readonly Dictionary<NodeId, ConfigNode> _configNodes = [];
+    private readonly Dictionary<NodeId, NodeAccessList> _accessLists = [];
     private readonly List<ConfigChangeEntry> _changes = [];
+    private readonly List<IDomainEvent> _accessChanges = [];
 
     public int SaveCalls { get; private set; }
 
     public IReadOnlyList<ConfigChangeEntry> AllChanges => _changes;
+
+    /// <summary>The grant and revoke events of every access list stored, in the order they were stored.</summary>
+    public IReadOnlyList<IDomainEvent> AllAccessChanges => _accessChanges;
 
     // --- repositories ---------------------------------------------------------------------------
 
@@ -70,6 +78,35 @@ public sealed class InMemoryStore :
                     break;
             }
         }
+
+        return Task.CompletedTask;
+    }
+
+    Task<NodeAccessList?> INodeAccessListRepository.Find(NodeId nodeId, CancellationToken cancellationToken) =>
+        Task.FromResult(_accessLists.GetValueOrDefault(nodeId));
+
+    public Task<IReadOnlyList<NodeAccessList>> FindMany(
+        IReadOnlyCollection<NodeId> nodeIds,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<NodeAccessList>>(
+            [.. nodeIds.Where(_accessLists.ContainsKey).Select(id => _accessLists[id])]);
+
+    public Task Add(NodeAccessList list, CancellationToken cancellationToken = default)
+    {
+        if (_accessLists.TryGetValue(list.NodeId, out var existing))
+        {
+            throw new ConcurrencyConflictException(list.NodeId, expectedVersion: 0, existing.Version);
+        }
+
+        _accessLists.Add(list.NodeId, list);
+        _accessChanges.AddRange(list.DequeueDomainEvents());
+
+        return Task.CompletedTask;
+    }
+
+    public Task Save(NodeAccessList list, CancellationToken cancellationToken = default)
+    {
+        _accessChanges.AddRange(list.DequeueDomainEvents());
 
         return Task.CompletedTask;
     }
@@ -120,6 +157,32 @@ public sealed class InMemoryStore :
         }
 
         return Task.FromResult<NodePath?>(path);
+    }
+
+    public Task<IReadOnlyList<NodeId>> GetAncestry(NodeId id, CancellationToken cancellationToken = default)
+    {
+        var ancestry = new Stack<NodeId>();
+        NodeId? current = id;
+
+        while (current is not null)
+        {
+            if (_groupingNodes.TryGetValue(current, out var group))
+            {
+                ancestry.Push(current);
+                current = group.ParentId;
+            }
+            else if (_configNodes.TryGetValue(current, out var config))
+            {
+                ancestry.Push(current);
+                current = config.ParentId;
+            }
+            else
+            {
+                return Task.FromResult<IReadOnlyList<NodeId>>([]);
+            }
+        }
+
+        return Task.FromResult<IReadOnlyList<NodeId>>([.. ancestry]);
     }
 
     public Task<NodeKind?> GetKind(NodeId id, CancellationToken cancellationToken = default) =>

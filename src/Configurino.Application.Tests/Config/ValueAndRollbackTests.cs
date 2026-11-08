@@ -32,8 +32,7 @@ public class ValueAndRollbackTests
         world.SetValues.Handle(new SetValuesCommand(World.Billing, [World.Assign(key, value)], World.Human));
 
     private static async Task<ChangeSetId> LatestChangeSet(World world) =>
-        (await world.GetChangeHistory.Handle(new GetChangeHistoryQuery(World.Billing, 1)))[0].Id;
-
+        (await world.GetChangeHistory.Handle(new GetChangeHistoryQuery(World.Billing, World.Human, 1)))[0].Id;
     [Fact]
     public async Task A_set_value_can_be_read_back()
     {
@@ -41,7 +40,7 @@ public class ValueAndRollbackTests
 
         await Set(world, "host", "db1");
 
-        var read = await world.GetValue.Handle(new GetValueQuery(World.Billing, World.Key("host")));
+        var read = await world.GetValue.Handle(new GetValueQuery(World.Billing, World.Key("host"), World.Human));
         Assert.Equal(KeyReadResult.Set(EntryValue.Of("db1")), read);
     }
 
@@ -65,7 +64,7 @@ public class ValueAndRollbackTests
 
         await world.ClearValues.Handle(new ClearValuesCommand(World.Billing, [World.Key("host")], World.Human));
 
-        var read = await world.GetValue.Handle(new GetValueQuery(World.Billing, World.Key("host")));
+        var read = await world.GetValue.Handle(new GetValueQuery(World.Billing, World.Key("host"), World.Human));
         Assert.Equal(KeyReadResult.NotSet, read);
     }
 
@@ -79,7 +78,7 @@ public class ValueAndRollbackTests
 
         await world.Rollback.Handle(new RollbackCommand(World.Billing, target, World.Human));
 
-        var read = await world.GetValue.Handle(new GetValueQuery(World.Billing, World.Key("host")));
+        var read = await world.GetValue.Handle(new GetValueQuery(World.Billing, World.Key("host"), World.Human));
         Assert.Equal(KeyReadResult.Set(EntryValue.Of("db1")), read);
         Assert.Equal(ChangeReason.Rollback(target), (await world.Store.GetChanges(
             (await world.Store.Resolve(World.Billing))!, 1))[0].Reason);
@@ -94,7 +93,7 @@ public class ValueAndRollbackTests
         await world.Rollback.Handle(
             new RollbackCommand(World.Billing, await LatestChangeSet(world), World.Human));
 
-        var read = await world.GetValue.Handle(new GetValueQuery(World.Billing, World.Key("host")));
+        var read = await world.GetValue.Handle(new GetValueQuery(World.Billing, World.Key("host"), World.Human));
         Assert.Equal(KeyReadResult.NotSet, read);
     }
 
@@ -134,7 +133,7 @@ public class ValueAndRollbackTests
         await Assert.ThrowsAsync<ChangeSetNotFoundException>(() =>
             world.Rollback.Handle(new RollbackCommand(World.Path("/prod/other"), target, World.Human)));
         await Assert.ThrowsAsync<ChangeSetNotFoundException>(() =>
-            world.GetChangeSet.Handle(new GetChangeSetQuery(World.Path("/prod/other"), target)));
+            world.GetChangeSet.Handle(new GetChangeSetQuery(World.Path("/prod/other"), target, World.Human)));
     }
 
     [Fact]
@@ -143,11 +142,11 @@ public class ValueAndRollbackTests
         var world = await WithKeys();
         await Set(world, "host", "db1");
 
-        var first = await world.GetConfigSnapshot.Handle(new GetConfigSnapshotQuery(World.Billing));
+        var first = await world.GetConfigSnapshot.Handle(new GetConfigSnapshotQuery(World.Billing, World.Client));
         var changed = Assert.IsType<SnapshotResult.Changed>(first);
 
         var again = await world.GetConfigSnapshot.Handle(
-            new GetConfigSnapshotQuery(World.Billing, changed.Snapshot.Version));
+            new GetConfigSnapshotQuery(World.Billing, World.Client, changed.Snapshot.Version));
 
         Assert.Equal(new SnapshotResult.NotModified(changed.Snapshot.Version), again);
     }
@@ -159,9 +158,9 @@ public class ValueAndRollbackTests
         await Set(world, "host", "db1");
         await Set(world, "host", "db2");
 
-        var firstPage = await world.GetChangeHistory.Handle(new GetChangeHistoryQuery(World.Billing, 1));
+        var firstPage = await world.GetChangeHistory.Handle(new GetChangeHistoryQuery(World.Billing, World.Human, 1));
         var secondPage = await world.GetChangeHistory.Handle(
-            new GetChangeHistoryQuery(World.Billing, 5, firstPage[0].Id));
+            new GetChangeHistoryQuery(World.Billing, World.Human, 5, firstPage[0].Id));
 
         Assert.Equal(2, secondPage.Count); // the first assignment and the registration
         Assert.True(firstPage[0].NodeVersion > secondPage[0].NodeVersion);

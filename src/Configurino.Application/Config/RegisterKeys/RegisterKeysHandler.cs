@@ -1,4 +1,6 @@
+using org.g14.Configurino.Application.Access;
 using org.g14.Configurino.Application.Nodes;
+using org.g14.Configurino.Domain.Access;
 using org.g14.Configurino.Domain.Exceptions;
 using org.g14.Configurino.Domain.Repositories;
 
@@ -13,16 +15,23 @@ public sealed class RegisterKeysHandler
     public const int MaxAttempts = 3;
 
     private readonly NodeLocator _locator;
+    private readonly AccessGuard _access;
     private readonly IConfigNodeRepository _configNodes;
     private readonly TimeProvider _time;
 
-    public RegisterKeysHandler(NodeLocator locator, IConfigNodeRepository configNodes, TimeProvider time)
+    public RegisterKeysHandler(
+        NodeLocator locator,
+        AccessGuard access,
+        IConfigNodeRepository configNodes,
+        TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(locator);
+        ArgumentNullException.ThrowIfNull(access);
         ArgumentNullException.ThrowIfNull(configNodes);
         ArgumentNullException.ThrowIfNull(time);
 
         _locator = locator;
+        _access = access;
         _configNodes = configNodes;
         _time = time;
     }
@@ -31,6 +40,9 @@ public sealed class RegisterKeysHandler
     public async Task<int> Handle(RegisterKeysCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
+
+        var nodeId = await _locator.ResolveConfigId(command.Path, cancellationToken);
+        await _access.Demand(command.By, nodeId, command.Path, NodeRight.RegisterKeys, cancellationToken);
 
         for (var attempt = 1; ; attempt++)
         {

@@ -14,12 +14,12 @@ ROOT
  └── website B [grouping]
 ```
 
-The following node types can exist in the config tree:
+The following node types can exist in the tree:
 
-- tree grouping – for organising related configs (for example for grouping permissions)
-- config object – an object existing in some `IConfiguration`/appsettings file
-- config array - an array existing in some `IConfiguration`/appsettings file
-- config leaf – a primitive value existing in some `IConfiguration`/appsettings file
+- grouping – for organising related configs (for example for grouping permissions)
+- config – a set of configuration values (like an appsettings file)
+
+
 
 
 # [tech] File organisation in ConfigTree/
@@ -47,9 +47,20 @@ The following node types can exist in the config tree:
 
 Things the domain and application layers deliberately leave open for now:
 
-- **No way to rebuild a `ConfigNode` from stored state.** Its constructor is private and always starts at
-  version 0, so Infrastructure will need a rehydration path (an internal factory or a persistence-state type).
-  The in-memory test store keeps live instances meanwhile.
+- **No way to rebuild a `ConfigNode` or a `NodeAccessList` from stored state.** Their constructors are private
+  and always start at version 0, so Infrastructure will need a rehydration path (an internal factory or a
+  persistence-state type). The in-memory test store keeps live instances meanwhile.
+- **Permissions are deliberately simple.** They are given to single actors (no groups), always reach every
+  node below, cannot be blocked further down, and there are no denials.
+- **Whoever uses a fresh installation first owns it.** Creating the root needs no permission, and the first
+  caller is made `Owner` of the whole tree. The same goes for whoever next ensures a root left without an
+  access list. A deployment should make that first call itself, before anyone else can reach it.
+- **`ManagePermissions` is as good as owning the node.** Whoever holds it may set any role, including roles
+  with rights they do not hold themselves.
+- **A refusal reveals that a node exists.** A path is resolved before access is checked, so a missing node
+  answers "not found" and an existing one "access denied" (or "wrong kind"), whoever asks.
+- **No read model for the permission history.** `RoleSet` events are raised and the
+  repository records them, but nothing reads them back yet the way `IConfigChangeLog` does for config changes.
 - **No cheap "version only" read.** `GetConfigSnapshot` with a known version still loads the whole aggregate.
   Add a dedicated read port only if polling load shows it matters.
 - **No expected version on person edits.** `SetValues`/`ClearValues` are checked against the stored version

@@ -27,6 +27,12 @@ public interface INodeDirectory
     /// <summary>Rebuilds the path that addresses a node, for showing it to a person.</summary>
     Task<NodePath?> GetPath(NodeId id, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Lists the ids from the root down to a node, the node itself last — what an access check walks.
+    /// Empty when there is no such node.
+    /// </summary>
+    Task<IReadOnlyList<NodeId>> GetAncestry(NodeId id, CancellationToken cancellationToken = default);
+
     /// <summary>Tells which kind a node is without loading it.</summary>
     Task<NodeKind?> GetKind(NodeId id, CancellationToken cancellationToken = default);
 

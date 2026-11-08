@@ -74,7 +74,7 @@ public class RegisterKeysTests
     }
 
     private static RegisterKeysHandler HandlerOver(World world, IConfigNodeRepository repository) =>
-        new(new NodeLocator(world.Store, world.Store, repository), repository, world.Time);
+        new(new NodeLocator(world.Store, world.Store, repository), world.Guard, repository, world.Time);
 
     /// <summary>
     /// Hands out a node freshly loaded on every call, as a real database would, and throws a conflict on
