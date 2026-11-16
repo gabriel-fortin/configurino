@@ -19,14 +19,16 @@ public sealed class AccessGuard
 {
     private readonly INodeDirectory _directory;
     private readonly INodeAccessListRepository _accessLists;
+    private readonly bool _ignoreAccessChecks;
 
-    public AccessGuard(INodeDirectory directory, INodeAccessListRepository accessLists)
+    public AccessGuard(INodeDirectory directory, INodeAccessListRepository accessLists, bool ignoreAccessChecks = false)
     {
         ArgumentNullException.ThrowIfNull(directory);
         ArgumentNullException.ThrowIfNull(accessLists);
 
         _directory = directory;
         _accessLists = accessLists;
+        _ignoreAccessChecks = ignoreAccessChecks;
     }
 
     /// <summary>Everything an actor may do on a node, whether given on the node itself or above it.</summary>
@@ -55,6 +57,8 @@ public sealed class AccessGuard
     {
         ArgumentNullException.ThrowIfNull(path);
         ArgumentOutOfRangeException.ThrowIfEqual(required, NodeRight.None);
+
+        if (_ignoreAccessChecks) return;
 
         var held = await EffectiveRights(actor, nodeId, cancellationToken);
 
