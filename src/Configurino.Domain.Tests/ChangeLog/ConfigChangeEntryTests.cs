@@ -40,7 +40,7 @@ public sealed class ConfigChangeEntryTests
         Assert.Equal(ChangeReason.Registration, entry.Reason);
 
         var schemaChange = Assert.Single(entry.SchemaChanges);
-        Assert.Equal(KeyChangeKind.KindChanged, schemaChange.Change);
+        Assert.Equal(KeyChangeType.KindChanged, schemaChange.Change);
     }
 
     [Fact]

@@ -59,14 +59,14 @@ public sealed record ConfigKeysRegistered : IDomainEvent
     /// </summary>
     public IReadOnlyList<ValueChange> ClearedValues => clearedValues;
 
-    public IReadOnlyList<EntryKey> Added => KeysWhere(KeyChangeKind.Added);
+    public IReadOnlyList<EntryKey> Added => KeysWhere(KeyChangeType.Added);
 
-    public IReadOnlyList<EntryKey> Reactivated => KeysWhere(KeyChangeKind.Reactivated);
+    public IReadOnlyList<EntryKey> Reactivated => KeysWhere(KeyChangeType.Reactivated);
 
-    public IReadOnlyList<EntryKey> KindChanged => KeysWhere(KeyChangeKind.KindChanged);
+    public IReadOnlyList<EntryKey> KindChanged => KeysWhere(KeyChangeType.KindChanged);
 
-    public IReadOnlyList<EntryKey> MarkedObsolete => KeysWhere(KeyChangeKind.MarkedObsolete);
+    public IReadOnlyList<EntryKey> MarkedObsolete => KeysWhere(KeyChangeType.MarkedObsolete);
 
-    private EntryKey[] KeysWhere(KeyChangeKind change) =>
+    private EntryKey[] KeysWhere(KeyChangeType change) =>
         [.. schemaChanges.Where(schemaChange => schemaChange.Change == change).Select(schemaChange => schemaChange.Key)];
 }

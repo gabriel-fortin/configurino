@@ -146,19 +146,19 @@ public sealed class ConfigNode : AggregateRoot
         {
             switch (change.Change)
             {
-                case KeyChangeKind.Added:
+                case KeyChangeType.Added:
                     _entries.Add(change.Key, new ConfigEntry(change.Key, change.NewKind, stamp));
                     break;
 
-                case KeyChangeKind.KindChanged:
+                case KeyChangeType.KindChanged:
                     _entries[change.Key].ChangeKind(change.NewKind, stamp);
                     break;
 
-                case KeyChangeKind.Reactivated:
+                case KeyChangeType.Reactivated:
                     _entries[change.Key].Reactivate(stamp);
                     break;
 
-                case KeyChangeKind.MarkedObsolete:
+                case KeyChangeType.MarkedObsolete:
                     _entries[change.Key].MarkObsolete(stamp);
                     break;
 
